@@ -1,5 +1,5 @@
 /*****************************************************************************************************
- * Título        : Trabalhando com interrupções no Raspberry Pi Pico
+ * Título        : Trabalhando com I2C e display SSD1306 no Raspberry Pi Pico
  * Desenvolvedor : Leonardo Rodrigues
  * Versão        : 1.0.0
  * 
@@ -7,12 +7,13 @@
  * Este programa implementa um sistema de controle interativo utilizando o Raspberry Pi Pico. O código
  * permite a manipulação de uma matriz 5x5 de LEDs WS2812, onde os números de 0 a 9 são exibidos. O sistema
  * responde a interrupções geradas por botões, incrementando ou decrementando o número exibido na matriz.
- * Além disso, o LED vermelho pisca a 5 Hz continuamente, sem bloquear a execução do programa.
+ * Além disso é possível enviar mensagens através da UART para um display modelo SSD1306.
  * 
  * Materiais utilizados:
  * 
  * 1 - Raspberry Pi Pico
  * 1 - Matriz 5x5 de LEDs WS2812
+ * 1 - Display SSD1306
  * 2 - Botões de pressão
  * 1 - LED RGB (vermelho, verde e azul)
  * 1 - Resistor de 330 ohms
@@ -268,7 +269,7 @@ int main() {
     ultimo_toggle_led = time_us_64();
 
    
- /*****************************************CONFIGURAÇÃO DO DISPLAY SSD1306********************************************/    
+ /***********************************CONFIGURAÇÃO DO DISPLAY SSD1306********************************************/    
 
   // I2C Initialisation. Using it at 400Khz.
   i2c_init(I2C_PORT, 400 * 1000);
@@ -287,17 +288,31 @@ int main() {
   ssd1306_fill(&ssd, false);
   ssd1306_send_data(&ssd);
 
+ /***********************************CONFIGURAÇÃO DA UART********************************************/  
+    // Inicializa a UART
+  uart_init(UART_ID, BAUD_RATE);
+
+    // Configura os pinos GPIO para a UART
+  gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART); // Configura o pino 0 para TX
+  gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART); // Configura o pino 1 para RX
+
+      // Mensagem inicial
+  const char *init_message = "UART Demo - RP2\r\n"
+                             "Digite algo e veja o eco:\r\n";
+  uart_puts(UART_ID, init_message);
+
 while (true) {
   
  // Limpa o display UMA única vez
     ssd1306_fill(&ssd, 0);
-
-    // Escolhe qual mensagem desenhar com base no último botão pressionado
+ 
+ if (uart_is_readable(UART_ID)) {
+    
     if (last_button_press == 'A') {
-        // Se LED verde está ON (ou seja, led_g_status = false, pois você inverteu),
-        // escolha a forma de exibir:
+      
         if (!led_g_status) {
             ssd1306_draw_string(&ssd, "Verde ligado", 15, 30);
+            uart_puts(UART_ID, "Botão do led verde pressionado. Led verde ligado.\r\n");
         } else {
             ssd1306_draw_string(&ssd, "Verde desligado", 3, 30);
         }
@@ -310,10 +325,11 @@ while (true) {
         }
     }
     else {
-        // Se nenhum botão foi pressionado ainda, pode deixar vazio ou mostrar algo:
+        
         ssd1306_draw_string(&ssd, "Aguardando...", 10, 30);
     }
-
+ }
+    
     // Atualiza o display
     ssd1306_send_data(&ssd);
 

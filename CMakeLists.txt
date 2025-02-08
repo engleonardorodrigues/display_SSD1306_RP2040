@@ -41,7 +41,7 @@ pico_set_program_name(project_display_SSD1306 "project_display_SSD1306")
 pico_set_program_version(project_display_SSD1306 "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(project_display_SSD1306 0)
+pico_enable_stdio_uart(project_display_SSD1306 1)
 pico_enable_stdio_usb(project_display_SSD1306 0)
 
 pico_generate_pio_header(project_display_SSD1306 ${CMAKE_CURRENT_LIST_DIR}/pio_matrix.pio)
